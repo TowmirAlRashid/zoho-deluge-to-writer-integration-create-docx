@@ -2,11 +2,10 @@ all_patients_log = Map();
 writer_doc_id = "jdi031483447563cc465e92156a511aefad8e";
 // merge_field_response = zoho.writer.getMergeFields(writer_doc_id,"zoho_one_conn");
 // info merge_field_response;
-
 crm_timelog_records_all = List();
-crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog", 1, 200, {"cvid": "5487746000008225174"}));
-crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog", 2, 200, {"cvid": "5487746000008225174"}));
-crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog", 3, 200, {"cvid": "5487746000008225174"}));
+crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog",1,200,{"cvid":"5487746000008225174"}));
+crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog",2,200,{"cvid":"5487746000008225174"}));
+crm_timelog_records_all.addAll(zoho.crm.getRecords("CCM_Program_Timelog",3,200,{"cvid":"5487746000008225174"}));
 // info zoho.crm.getRecords("CCM_Program_Timelog");
 occurances = List();
 for each  record in crm_timelog_records_all
@@ -15,15 +14,14 @@ for each  record in crm_timelog_records_all
 	if(all_patients_log.get(patient_id) == null)
 	{
 		Occurances = List();
-		Occurances.add({"Created_Time": record.get("Created_Time").getDate(), "Services_List": record.get("Services_List"), "Time": record.get("Time")});
-		all_patients_log.put(patient_id,{"Patient_Name":record.get("Patient").get("name"),"Time_Log":ifnull(record.get("Time"),"0:00:00:00"), "Occurances": Occurances});
+		Occurances.add({"Created_Time":record.get("Created_Time").getDate(),"Services_List":record.get("Services_List"),"Time":record.get("Time")});
+		all_patients_log.put(patient_id,{"Patient_Name":record.get("Patient").get("name"),"Time_Log":ifnull(record.get("Time"),"0:00:00:00"),"Occurances":Occurances});
 	}
 	else
 	{
-		occurance = {"Created_Time": record.get("Created_Time").getDate(), "Services_List": record.get("Services_List"), "Time": record.get("Time")};
+		occurance = {"Created_Time":record.get("Created_Time").getDate(),"Services_List":record.get("Services_List"),"Time":record.get("Time")};
 		Occurances = all_patients_log.get(patient_id).get("Occurances");
 		Occurances.add(occurance);
-	
 		current_time = ifnull(all_patients_log.get(patient_id).get("Time_Log"),"0:00:00:00");
 		current_hour = current_time.subText(0,1).toNumber();
 		current_minutes = current_time.subText(2,4).toNumber();
@@ -65,45 +63,32 @@ for each  record in crm_timelog_records_all
 		{
 			final_milliseconds = "0" + final_milliseconds;
 		}
-		all_patients_log.put(patient_id,{"Patient_Name":record.get("Patient").get("name"),"Patient_ID":record.get("Patient").get("id"),"Time_Log":ifnull(final_hour + ":" + final_minutes + ":" + final_seconds + ":" + final_milliseconds,"0:00:00:00"), "Occurances": Occurances});
+		all_patients_log.put(patient_id,{"Patient_Name":record.get("Patient").get("name"),"Patient_ID":record.get("Patient").get("id"),"Time_Log":ifnull(final_hour + ":" + final_minutes + ":" + final_seconds + ":" + final_milliseconds,"0:00:00:00"),"Occurances":Occurances});
 	}
 }
 // info all_patients_log;
-for each patient in all_patients_log
+for each  patient in all_patients_log
 {
-	Name = ifnull(patient.get("Patient_Name"), "");
-	record_id  = ifnull(patient.get("Patient_ID"), "");
-	Total_Time_Log = ifnull(patient.get("Time_Log"), "");
-	Occurances = ifnull(patient.get("Occurances"), List() );
+	Name = ifnull(patient.get("Patient_Name"),"");
+	record_id = ifnull(patient.get("Patient_ID"),"");
+	Total_Time_Log = ifnull(patient.get("Time_Log"),"");
+	Occurances = ifnull(patient.get("Occurances"),List());
 	Appointments = List();
-	for each Occurance in Occurances
-    {
-		appointment_map = {
-			"Appointments.Date": ifnull(Occurance.get("Created_Time"), ""),
-			"Appointments.Services": ifnull(Occurance.get("Services_List"), List() ).toString(","),
-			"Appointments.Time_Log": ifnull(Occurance.get("Time"), "0:00:00:00")
-		};
+	for each  Occurance in Occurances
+	{
+		appointment_map = {"Appointments.Date":ifnull(Occurance.get("Created_Time"),""),"Appointments.Services":ifnull(Occurance.get("Services_List"),List()).toString(","),"Appointments.Time_Log":ifnull(Occurance.get("Time"),"0:00:00:00")};
 		Appointments.add(appointment_map);
-    }
-	writer_data = {
-    "data": {
-      {
-        "Appointments": Appointments,
-        "Name": Name,
-        "Total_Time_Log": Total_Time_Log
-      }
-    }
-};
+	}
+	writer_data = {"data":{{"Appointments":Appointments,"Name":Name,"Total_Time_Log":Total_Time_Log}}};
 	params = {"output_format":"docx","merge_data":writer_data};
-writer_resp = invokeurl
-[
-	url :"https://zohoapis.com/writer/api/v1/documents/" + writer_doc_id + "/merge"
-	type :POST
-	parameters:params
-	connection:"zoho_one_conn"
-];
-file_name = "Appointment doc " + Name + ".docx";
-writer_resp.setFileName(file_name);
-
-zoho.crm.attachFile("Contacts",record_id,writer_resp);
+	writer_resp = invokeurl
+	[
+		url :"https://zohoapis.com/writer/api/v1/documents/" + writer_doc_id + "/merge"
+		type :POST
+		parameters:params
+		connection:"zoho_one_conn"
+	];
+	file_name = "Appointment doc " + Name + ".docx";
+	writer_resp.setFileName(file_name);
+	zoho.crm.attachFile("Contacts",record_id,writer_resp);
 }
