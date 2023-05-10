@@ -1,0 +1,45 @@
+all_contacts_list = List();
+all_contacts_list.addAll(zoho.crm.getRecords("Contacts", 1, 200, {"cvid": "4728790000008860009"}));
+
+format_for_contacts_data = List();
+
+for each record in all_contacts_list
+{
+	data_map = Map();
+	data_map.put("id", record.get("id"));
+	data_map.put("Contact_Name", ifnull(record.get("Full_Name"), ""));
+	data_map.put("Email", ifnull(record.get("Email"), ""));
+	format_for_contacts_data.add(data_map);
+}
+
+writer_doc_id = "30xhy069dbf054bad458cad4566d8aa5c83d8";
+// merge_field_response = zoho.writer.getMergeFields(writer_doc_id,"zoho_writer_conn");
+// info merge_field_response;
+
+for each record in format_for_contacts_data
+{
+	Contact_Name = ifnull(record.get("Contact_Name"), "");
+	Email = ifnull(record.get("Email"), "");
+	record_id = record.get("id");
+	
+	writer_data = {
+		"data": {
+			{
+				"Contact_Name": Contact_Name,
+				"Email": Email
+			}
+		}
+	};
+	info writer_data;
+	params = {"output_format":"pdf","merge_data":writer_data};
+	writer_resp = invokeurl
+	[
+		url :"https://zohoapis.com/writer/api/v1/documents/" + writer_doc_id + "/merge"
+		type :POST
+		parameters:params
+		connection:"zoho_writer_conn"
+	];
+	file_name = "Contact Info " + Contact_Name + ".pdf";
+	writer_resp.setFileName(file_name);
+	zoho.crm.attachFile("Contacts",record_id,writer_resp);
+}
